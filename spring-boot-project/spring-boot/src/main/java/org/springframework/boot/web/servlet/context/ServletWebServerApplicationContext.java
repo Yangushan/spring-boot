@@ -155,6 +155,9 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 		}
 	}
 
+	/**
+	 * 在这个方法中主要是完成我们tomcat/jetty这种服务器的初始化和启动
+	 */
 	@Override
 	protected void onRefresh() {
 		super.onRefresh();
@@ -179,8 +182,10 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 		ServletContext servletContext = getServletContext();
 		if (webServer == null && servletContext == null) {
 			StartupStep createWebServer = this.getApplicationStartup().start("spring.boot.webserver.create");
+			// 根据当前服务中使用了tomcat/jetty来选择对应的server的bean
 			ServletWebServerFactory factory = getWebServerFactory();
 			createWebServer.tag("factory", factory.getClass().toString());
+			// 使用了tomcat就会拿到tomcat bean一样的逻辑，这里的getWebServer就是启动具体的服务
 			this.webServer = factory.getWebServer(getSelfInitializer());
 			createWebServer.end();
 			getBeanFactory().registerSingleton("webServerGracefulShutdown",
@@ -200,6 +205,8 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 	}
 
 	/**
+	 * 拿到当前服务器中注册的webServerFactory的bean对象
+	 * @see org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration
 	 * Returns the {@link ServletWebServerFactory} that should be used to create the
 	 * embedded {@link WebServer}. By default this method searches for a suitable bean in
 	 * the context itself.
@@ -207,6 +214,7 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 	 */
 	protected ServletWebServerFactory getWebServerFactory() {
 		// Use bean names so that we don't consider the hierarchy
+		// 拿到我们具体的server bean对象
 		String[] beanNames = getBeanFactory().getBeanNamesForType(ServletWebServerFactory.class);
 		if (beanNames.length == 0) {
 			throw new MissingWebServerFactoryBeanException(getClass(), ServletWebServerFactory.class,

@@ -38,6 +38,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.util.ErrorHandler;
 
 /**
+ * Spring默认的RunListener实现
  * {@link SpringApplicationRunListener} to publish {@link SpringApplicationEvent}s.
  * <p>
  * Uses an internal {@link ApplicationEventMulticaster} for the events that are fired

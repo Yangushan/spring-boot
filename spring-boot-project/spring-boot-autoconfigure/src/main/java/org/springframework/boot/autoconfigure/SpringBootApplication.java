@@ -53,7 +53,11 @@ import org.springframework.data.repository.Repository;
 @Documented
 @Inherited
 @SpringBootConfiguration
-@EnableAutoConfiguration
+@EnableAutoConfiguration // 导入我们的配置类
+// AutoConfigurationExcludeFilter的作用是排除掉自动注入的配置类，因为上面一个注解已经处理过了
+// 所以我们的@ComponentScan不需要在处理了
+// TypeExcludeFilter的作用是Spring留给我们的一个钩子，用来给我们扩展的，他会找到Spring中所有的TypeExcludeFilter bean
+// 然后调用里面的match方法，如果我们引入了某个jar包又不方便改动代码也不想要使用里面的某个bean，就可以通过这种方式来排除
 @ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
 		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
 public @interface SpringBootApplication {

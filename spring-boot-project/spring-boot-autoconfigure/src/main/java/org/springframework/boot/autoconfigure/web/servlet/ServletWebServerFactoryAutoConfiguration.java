@@ -53,6 +53,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
 /**
+ * 这个类的作用就是帮我们注册ServletWebServerFactory的bean，但是bean上面都有对应的condition来判断
  * {@link EnableAutoConfiguration Auto-configuration} for servlet web servers.
  *
  * @author Phillip Webb

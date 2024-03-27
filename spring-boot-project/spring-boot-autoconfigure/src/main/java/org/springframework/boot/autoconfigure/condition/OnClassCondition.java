@@ -49,6 +49,7 @@ class OnClassCondition extends FilteringSpringBootCondition {
 		// Split the work and perform half in a background thread if more than one
 		// processor is available. Using a single additional thread seems to offer the
 		// best performance. More threads make things worse.
+		// 如果找到需要自动配置的class，我们的核心数是超过1，则多开启一个线程去帮我们解析我们的class
 		if (autoConfigurationClasses.length > 1 && Runtime.getRuntime().availableProcessors() > 1) {
 			return resolveOutcomesThreaded(autoConfigurationClasses, autoConfigurationMetadata);
 		}
@@ -61,16 +62,20 @@ class OnClassCondition extends FilteringSpringBootCondition {
 
 	private ConditionOutcome[] resolveOutcomesThreaded(String[] autoConfigurationClasses,
 			AutoConfigurationMetadata autoConfigurationMetadata) {
+		// 把数量/2，分为两段
 		int split = autoConfigurationClasses.length / 2;
+		// 第一段单独开启一个线程去解析
 		OutcomesResolver firstHalfResolver = createOutcomesResolver(autoConfigurationClasses, 0, split,
 				autoConfigurationMetadata);
 		OutcomesResolver secondHalfResolver = new StandardOutcomesResolver(autoConfigurationClasses, split,
 				autoConfigurationClasses.length, autoConfigurationMetadata, getBeanClassLoader());
+		// 这里会调用join等待完成
 		ConditionOutcome[] secondHalf = secondHalfResolver.resolveOutcomes();
 		ConditionOutcome[] firstHalf = firstHalfResolver.resolveOutcomes();
 		ConditionOutcome[] outcomes = new ConditionOutcome[autoConfigurationClasses.length];
 		System.arraycopy(firstHalf, 0, outcomes, 0, firstHalf.length);
 		System.arraycopy(secondHalf, 0, outcomes, split, secondHalf.length);
+		// 两段合并起来返回
 		return outcomes;
 	}
 

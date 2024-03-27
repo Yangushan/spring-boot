@@ -35,6 +35,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
+ * 比较核心的一个condition，当系统中存在某个配置的值是和你指定的匹配的时候生效
+ * 其实就是去前面的environment里面去拿，具体案例可以看org.springframework.boot.autoconfigure.aop.AopAutoConfiguration
  * {@link Condition} that checks if properties are defined in environment.
  *
  * @author Maciej Walkowiak
@@ -56,6 +58,7 @@ class OnPropertyCondition extends SpringBootCondition {
 		List<ConditionMessage> noMatch = new ArrayList<>();
 		List<ConditionMessage> match = new ArrayList<>();
 		for (AnnotationAttributes annotationAttributes : allAnnotationAttributes) {
+			// 从environment去拿property，如果匹配则生效否则不生效
 			ConditionOutcome outcome = determineOutcome(annotationAttributes, context.getEnvironment());
 			(outcome.isMatch() ? match : noMatch).add(outcome.getConditionMessage());
 		}

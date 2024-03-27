@@ -44,6 +44,7 @@ public abstract class SpringBootCondition implements Condition {
 	public final boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
 		String classOrMethodName = getClassOrMethodName(metadata);
 		try {
+			// 主要是不同子类实现的getMatchOutcome方法逻辑
 			ConditionOutcome outcome = getMatchOutcome(context, metadata);
 			logOutcome(classOrMethodName, outcome);
 			recordEvaluation(context, classOrMethodName, outcome);

@@ -44,13 +44,28 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  * @see EnableAspectJAutoProxy
  */
 @AutoConfiguration
+// 这里的conditional的意思是，如果我们配置了spring.aop.auto属性=true生效，如果没有配置则使用matchIfMissing
+// 也就是除非我们配置了spring.aop.auto=false，否则这个AopAutoConfiguration bean自动生效，是否生效还要看里面的逻辑
 @ConditionalOnProperty(prefix = "spring.aop", name = "auto", havingValue = "true", matchIfMissing = true)
 public class AopAutoConfiguration {
 
+	/**
+	 * AopAutoConfiguration有两个内部类
+	 */
+
+	/**
+	 * 这个内部类的意思是，我们的系统中必须有Advice的bean才能生效
+	 * 所以如果我们引入了aop starter，他在里面会导入advice的bean，所以这个类就可以生效了
+	 * 这个类就是开启@AspectJ，但是写了两个有各自的条件
+	 */
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(Advice.class)
 	static class AspectJAutoProxyingConfiguration {
 
+		/**
+		 * 这里的意思是我们必须强制配置属性proxy-target-class=false才会用jdk动态代理
+		 * 这也是为什么我们使用springboot aop的时候默认就是cglib的原因，因为很少去配置这个属性
+		 */
 		@Configuration(proxyBeanMethods = false)
 		@EnableAspectJAutoProxy(proxyTargetClass = false)
 		@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "false")
@@ -58,6 +73,7 @@ public class AopAutoConfiguration {
 
 		}
 
+		// 看这个conditional的意思，如果我们配置了spring.aop.proxy-target-class的属性是True，则使用cglib，如果没有配置这个属性也是默认是True
 		@Configuration(proxyBeanMethods = false)
 		@EnableAspectJAutoProxy(proxyTargetClass = true)
 		@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "true",
@@ -68,12 +84,22 @@ public class AopAutoConfiguration {
 
 	}
 
+	/**
+	 * 这个类和上面那个类是互相冲突的，如果上面有效，我们这个类就会失效，因为这里的逻辑是不存在Advice
+	 * 并且我们没有配置spring.aop.proxy-target-class=false就会生效
+	 */
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnMissingClass("org.aspectj.weaver.Advice")
 	@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "true",
 			matchIfMissing = true)
 	static class ClassProxyingConfiguration {
 
+		/**
+		 * 如果这个类生效了，那么这个接口就会去帮我们创建一个InfrastructureAdvisorAutoProxyCreator这个bean
+		 * InfrastructureAdvisorAutoProxyCreator是一个BeanPostProcssor可以帮我们进行advice代理
+		 *
+		 * @return
+		 */
 		@Bean
 		static BeanFactoryPostProcessor forceAutoProxyCreatorToUseClassProxying() {
 			return (beanFactory) -> {

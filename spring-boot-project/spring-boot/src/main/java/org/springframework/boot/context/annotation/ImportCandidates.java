@@ -71,6 +71,7 @@ public final class ImportCandidates implements Iterable<String> {
 	public static ImportCandidates load(Class<?> annotation, ClassLoader classLoader) {
 		Assert.notNull(annotation, "'annotation' must not be null");
 		ClassLoader classLoaderToUse = decideClassloader(classLoader);
+		// 2.7的变化，把enableAuto的配置单独放入一个Imports文件里面了
 		String location = String.format(LOCATION, annotation.getName());
 		Enumeration<URL> urls = findUrlsInClasspath(classLoaderToUse, location);
 		List<String> importCandidates = new ArrayList<>();

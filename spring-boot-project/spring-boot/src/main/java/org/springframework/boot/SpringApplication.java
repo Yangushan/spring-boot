@@ -260,12 +260,18 @@ public class SpringApplication {
 	public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
 		this.resourceLoader = resourceLoader;
 		Assert.notNull(primarySources, "PrimarySources must not be null");
+		// 传入的配置类，也就是我们的自己定义的main.class或者application.class
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+		// 推断当前我们Spring是什么应用（是普通的servlet还是一个REACTIVE类型，或者就是一个None类型）
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
+		// 从spring.factories中拿到BootstrapRegistryInitializer配置对应的类
 		this.bootstrapRegistryInitializers = new ArrayList<>(
 				getSpringFactoriesInstances(BootstrapRegistryInitializer.class));
+		// 从spring.factories里面拿到ApplicationContextInitializer对应的类，放入到initializers属性中
 		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+		// 从spring.factories中拿到ApplicationListener对应的类，放入到listeners属性中
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+		// 拿到main方法对应的class类
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
 
@@ -292,34 +298,60 @@ public class SpringApplication {
 	 */
 	public ConfigurableApplicationContext run(String... args) {
 		long startTime = System.nanoTime();
+		// 1.创建引动类上下文，类似applicationContext的作用
 		DefaultBootstrapContext bootstrapContext = createBootstrapContext();
 		ConfigurableApplicationContext context = null;
 		configureHeadlessProperty();
+		// 从spring.factories文件中拿到SpringApplicationRunListener配置的内容，之后会对这个监听器发布很多任务
+		// 所以如果我们想要监听springboot相关的事件也可以自定义一个spring.factories然后从里面设置我们自己的listener
+		// 2.默认的实现是EventPublishingRunListener
 		SpringApplicationRunListeners listeners = getRunListeners(args);
+		// 3.发布starting事件
 		listeners.starting(bootstrapContext, this.mainApplicationClass);
 		try {
+			// 4.拿到程序运行指定的参数，进行包装
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+			// 5. 拿到各种环境变量，系统中的我们的配置文件等等（重点）
 			ConfigurableEnvironment environment = prepareEnvironment(listeners, bootstrapContext, applicationArguments);
+			// 忽略
 			configureIgnoreBeanInfo(environment);
+			// 打印banner
 			Banner printedBanner = printBanner(environment);
+			// 6. 创建我们的Spring容器，根据前面判断的应用类型
 			context = createApplicationContext();
 			context.setApplicationStartup(this.applicationStartup);
+			/**
+			 * 利用ApplicationContextInitializer初始化Spring容器
+			 * 8、发布ApplicationContextInitializedEvent
+			 * 9、关闭DefaultBootstrapContext
+			 * 10、注册primarySources类，就是run方法存入进来的配置类
+			 * 发布ApplicationPreparedEvent事件
+			 */
 			prepareContext(bootstrapContext, context, environment, listeners, applicationArguments, printedBanner);
+			/**
+			 * 12. 会调用Spring的refresh方法，然后里面因为继承了onRefresh方法
+			 * 所以在onRefresh方法中，又会启动我们的tomcat
+			 */
 			refreshContext(context);
+			// 空方法
 			afterRefresh(context, applicationArguments);
 			Duration timeTakenToStartup = Duration.ofNanos(System.nanoTime() - startTime);
 			if (this.logStartupInfo) {
 				new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), timeTakenToStartup);
 			}
+			// 13.调用已经启动完成的事件
 			listeners.started(context, timeTakenToStartup);
+			// 调用runner(ApplicationRunner, CommandLineRunner)
 			callRunners(context, applicationArguments);
 		}
 		catch (Throwable ex) {
+			// 如果启动失败，调用启动失败的事件
 			handleRunFailure(context, ex, listeners);
 			throw new IllegalStateException(ex);
 		}
 		try {
 			Duration timeTakenToReady = Duration.ofNanos(System.nanoTime() - startTime);
+			// 通知ready事件
 			listeners.ready(context, timeTakenToReady);
 		}
 		catch (Throwable ex) {
@@ -335,13 +367,47 @@ public class SpringApplication {
 		return bootstrapContext;
 	}
 
+	/**
+	 * 加载环境变量（核心流程）
+	 * 	关于Spring配置文件的执行顺序
+	 * https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config
+	 *	关于配置文件，其实是存在多个propertySource,通过优先级也是list顺序，先拿到的就直接返回了
+	 *	所以当我们配置application.properties, application-dev.properties都会加载，只是根据我们的顺序放入不同的配置，然后先得到的拿到返回
+	 * 	而不是覆盖的意思
+	 *
+	 * @param listeners
+	 * @param bootstrapContext
+	 * @param applicationArguments
+	 * @return
+	 */
 	private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners,
 			DefaultBootstrapContext bootstrapContext, ApplicationArguments applicationArguments) {
 		// Create and configure the environment
+		// 创建ApplicationServletEnvironment，里面添加了四个PropertySource
+		// 1. StubPropertySource {name='servletConfigInitParams'} Servlet配置的config变量
+		// 2. StubPropertySource {name='servletContextInitParams'} servlet配置的context变量
+		// 3. PropertiesPropertySource {name='systemProperties'} 系统的一个变量
+		// 4. SystemEnvironmentPropertySource {name='systemEnvironment'} zsh或者bash里面那种变量
+
+		/**
+		 * 这个environment就是体现了我们加载变量的顺序
+		 */
 		ConfigurableEnvironment environment = getOrCreateEnvironment();
+
+		// 添加SimpleCommandLinePropertySource {name='commandLineArgs'}，放在首位，这个变量就是我们在启动java中后面带有的参数，也就是我们的vm options
+		// 所以这里就是SimpleCommandLinePropertySource的顺序会比上面4个高
 		configureEnvironment(environment, applicationArguments.getSourceArgs());
+
+		// 把所有的PropertySources封装为一个ConfigurationPropertySourcesPropertySource
+		// 然后添加到environment中，放在首位
 		ConfigurationPropertySources.attach(environment);
+
+		// 发布ApplicationEnvironmentPreparedEvent事件，表示环境已经准备好了
+		// 默认EnvironmentPostProcessorApplicationListener会处理这个事件，会从spring.factories中拿出EnvironmentPostProcessor进一步处理Environment
+		// 重点，也就是这里我们才会去处理我们的application.properties等文件
 		listeners.environmentPrepared(bootstrapContext, environment);
+
+		// 最后，把defaultProperties移到最后
 		DefaultPropertiesPropertySource.moveToEnd(environment);
 		Assert.state(!environment.containsProperty("spring.main.environment-prefix"),
 				"Environment prefix cannot be set via properties.");
@@ -477,9 +543,12 @@ public class SpringApplication {
 	 */
 	protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) {
 		if (this.addConversionService) {
+			// 添加一些类型转化器，比如把properties文件中的字符串转化成各种类型
 			environment.setConversionService(new ApplicationConversionService());
 		}
+		// 添加SimpleCommandLinePropertySource {name='commandLineArgs'}，放在首位
 		configurePropertySources(environment, args);
+		// 空方法
 		configureProfiles(environment, args);
 	}
 
@@ -506,6 +575,7 @@ public class SpringApplication {
 				sources.replace(name, composite);
 			}
 			else {
+				// 添加到首位
 				sources.addFirst(new SimpleCommandLinePropertySource(args));
 			}
 		}
@@ -741,6 +811,7 @@ public class SpringApplication {
 	}
 
 	private void callRunners(ApplicationContext context, ApplicationArguments args) {
+		// 为runner排序，然后执行
 		context.getBeanProvider(Runner.class).orderedStream().forEach((runner) -> {
 			if (runner instanceof ApplicationRunner) {
 				callRunner((ApplicationRunner) runner, args);

@@ -20,6 +20,7 @@ import org.springframework.boot.loader.archive.Archive;
 import org.springframework.boot.loader.archive.Archive.EntryFilter;
 
 /**
+ * Springboot在用java -jar命令运行的时候，实际上运行的是这个jar的main方法
  * {@link Launcher} for JAR based archives. This launcher assumes that dependency jars are
  * included inside a {@code /BOOT-INF/lib} directory and that application classes are
  * included inside a {@code /BOOT-INF/classes} directory.

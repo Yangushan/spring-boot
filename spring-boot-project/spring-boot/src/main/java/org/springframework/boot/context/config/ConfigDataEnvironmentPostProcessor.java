@@ -40,6 +40,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * 帮我们解析application.properties文件的地方
  * {@link EnvironmentPostProcessor} that loads and applies {@link ConfigData} to Spring's
  * {@link Environment}.
  *
@@ -99,6 +100,8 @@ public class ConfigDataEnvironmentPostProcessor implements EnvironmentPostProces
 		try {
 			this.logger.trace("Post-processing environment to add config data");
 			resourceLoader = (resourceLoader != null) ? resourceLoader : new DefaultResourceLoader();
+			// 先生成ConfigDataEnvironment对象，核心是根据指定location构造类型为Kind.INITIAL_IMPORT的ConfigDataEnvironmentContributor
+			// processAndApply()将进行解析
 			getConfigDataEnvironment(environment, resourceLoader, additionalProfiles).processAndApply();
 		}
 		catch (UseLegacyConfigProcessingException ex) {

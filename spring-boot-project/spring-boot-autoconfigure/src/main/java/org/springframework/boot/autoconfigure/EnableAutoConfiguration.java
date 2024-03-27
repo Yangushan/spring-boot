@@ -80,8 +80,8 @@ import org.springframework.core.io.support.SpringFactoriesLoader;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@AutoConfigurationPackage
-@Import(AutoConfigurationImportSelector.class)
+@AutoConfigurationPackage // 帮我们注册一个bean，是把我们当前所在的目录设置为一个bean,这个bean的作用可以让其他的项目拿到这个bean也就可以拿到当前所在的目录了
+@Import(AutoConfigurationImportSelector.class) // 导入这个类可以帮我们过滤系统中不需要的Springboot依赖导入我们需要的依赖
 public @interface EnableAutoConfiguration {
 
 	/**

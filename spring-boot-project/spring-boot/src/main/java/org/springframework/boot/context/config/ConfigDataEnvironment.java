@@ -83,6 +83,10 @@ class ConfigDataEnvironment {
 
 	/**
 	 * Default search locations used if not {@link #LOCATION_PROPERTY} is found.
+	 * 默认的application.properties地址，从下面5个文件夹下面找
+	 * 因为算法是从List长度-1开始，所以会是先加载file，再加载classpath
+	 * 所以也是先加载文件路径长的，再加载文件路径短的，从右向左开始
+	 * optional的意思是如果文件不存在没有关系可以忽略，如果不写Optional就会报错
 	 */
 	static final ConfigDataLocation[] DEFAULT_SEARCH_LOCATIONS;
 	static {
@@ -150,6 +154,7 @@ class ConfigDataEnvironment {
 		this.environmentUpdateListener = (environmentUpdateListener != null) ? environmentUpdateListener
 				: ConfigDataEnvironmentUpdateListener.NONE;
 		this.loaders = new ConfigDataLoaders(logFactory, bootstrapContext, resourceLoader.getClassLoader());
+		// 这里会构建我们加载application文件的地址
 		this.contributors = createContributors(binder);
 	}
 
@@ -173,6 +178,7 @@ class ConfigDataEnvironment {
 				contributors.add(ConfigDataEnvironmentContributor.ofExisting(propertySource));
 			}
 		}
+		// 主要是这里会创建默认的文件夹地址
 		contributors.addAll(getInitialImportContributors(binder));
 		if (defaultPropertySource != null) {
 			this.logger.trace("Creating wrapped config data contributor for default property source");
@@ -190,11 +196,20 @@ class ConfigDataEnvironment {
 		return this.contributors;
 	}
 
+	/**
+	 * 初始化加载我们配置文件地址的地方，从这里可以看出来，如果我们有指定IMPORT_PROPERTY，先使用这个地址
+	 * 然后使用自定义ADDITIONAL_LOCATION_PROPERTY，如果都没有则使用默认的，默认的是先加载file目录，然后才加载classpath目录
+	 * @param binder
+	 * @return
+	 */
 	private List<ConfigDataEnvironmentContributor> getInitialImportContributors(Binder binder) {
 		List<ConfigDataEnvironmentContributor> initialContributors = new ArrayList<>();
+		// 如果没有配置IMPORT_PROPERTY，则是空，我们可以自定义
 		addInitialImportContributors(initialContributors, bindLocations(binder, IMPORT_PROPERTY, EMPTY_LOCATIONS));
+		// 如果没有配置ADDITIONAL_LOCATION_PROPERTY，则是空，我们可以自定义
 		addInitialImportContributors(initialContributors,
 				bindLocations(binder, ADDITIONAL_LOCATION_PROPERTY, EMPTY_LOCATIONS));
+		// 如果没有配置LOCATION_PROPERTY，则使用默认的地址
 		addInitialImportContributors(initialContributors,
 				bindLocations(binder, LOCATION_PROPERTY, DEFAULT_SEARCH_LOCATIONS));
 		return initialContributors;
@@ -206,6 +221,7 @@ class ConfigDataEnvironment {
 
 	private void addInitialImportContributors(List<ConfigDataEnvironmentContributor> initialContributors,
 			ConfigDataLocation[] locations) {
+		// 这里是倒叙加入，所以这是为什么上面先加载file再加载classpath的原因
 		for (int i = locations.length - 1; i >= 0; i--) {
 			initialContributors.add(createInitialImportContributor(locations[i]));
 		}

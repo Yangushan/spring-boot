@@ -80,6 +80,7 @@ public abstract class AutoConfigurationPackages {
 	}
 
 	/**
+	 * 注册AutoConfigurationPackages这个bean
 	 * Programmatically registers the auto-configuration package names. Subsequent
 	 * invocations will add the given package names to those that have already been
 	 * registered. You can use this method to manually define the base packages that will
@@ -91,6 +92,7 @@ public abstract class AutoConfigurationPackages {
 	 * @param packageNames the package names to set
 	 */
 	public static void register(BeanDefinitionRegistry registry, String... packageNames) {
+		// 注册AutoConfigurationPackages这个bean
 		if (registry.containsBeanDefinition(BEAN)) {
 			BasePackagesBeanDefinition beanDefinition = (BasePackagesBeanDefinition) registry.getBeanDefinition(BEAN);
 			beanDefinition.addBasePackages(packageNames);
@@ -101,6 +103,7 @@ public abstract class AutoConfigurationPackages {
 	}
 
 	/**
+	 * 这个bean是一个ImportBeanDefinitionRegistrar，在识别配置类的时候会调用注册beanDefinition的方法
 	 * {@link ImportBeanDefinitionRegistrar} to store the base package from the importing
 	 * configuration.
 	 */

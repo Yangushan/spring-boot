@@ -32,6 +32,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.ResourceLoader;
 
 /**
+ * 重要的类，environment处理完成之后会调用的一个类，
  * {@link SmartApplicationListener} used to trigger {@link EnvironmentPostProcessor
  * EnvironmentPostProcessors} registered in the {@code spring.factories} file.
  *
@@ -94,9 +95,25 @@ public class EnvironmentPostProcessorApplicationListener implements SmartApplica
 		}
 	}
 
+	/**
+	 * Environment预处理完成调用的方法
+	 * @param event
+	 */
 	private void onApplicationEnvironmentPreparedEvent(ApplicationEnvironmentPreparedEvent event) {
 		ConfigurableEnvironment environment = event.getEnvironment();
 		SpringApplication application = event.getSpringApplication();
+		/**
+		 * 这里拿到所有的EnvironmentPostProcessor，bean,去调用里面的方法
+		 * 这里默认的是在spring.factories里面定义的，所以我们也可以自己扩展这个类，如果我们有什么环境变量想要实现，可以也定义这个类
+		 * Spring默认配置类这些
+		 * org.springframework.boot.env.EnvironmentPostProcessor=\
+		 * org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor,\
+		 * org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor,\ 解析我们的配置类
+		 * org.springframework.boot.env.RandomValuePropertySourceEnvironmentPostProcessor,\ 帮我们生成随机数
+		 * org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor,\ 可以在命令行配置--spring.application.json={k=v}
+		 * org.springframework.boot.env.SystemEnvironmentPropertySourceEnvironmentPostProcessor,\
+		 * org.springframework.boot.reactor.DebugAgentEnvironmentPostProcessor
+		 */
 		for (EnvironmentPostProcessor postProcessor : getEnvironmentPostProcessors(application.getResourceLoader(),
 				event.getBootstrapContext())) {
 			postProcessor.postProcessEnvironment(environment, application);
