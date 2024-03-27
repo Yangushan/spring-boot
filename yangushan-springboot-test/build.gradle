@@ -1,0 +1,61 @@
+plugins {
+	id "org.springframework.boot.starter"
+}
+
+description = "个人用来测试springboot的项目"
+
+//group = 'org.yangushan'
+//version = '2.7.18-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+	// 使用API就可以自动导入依赖的相关包
+	api(project(":spring-boot-project:spring-boot-starters:spring-boot-starter-web"))
+	// https://mvnrepository.com/artifact/org.mybatis.spring.boot/mybatis-spring-boot-starter
+	implementation group: 'org.mybatis.spring.boot', name: 'mybatis-spring-boot-starter', version: '2.3.2'
+
+	implementation 'mysql:mysql-connector-java:8.0.33'
+
+}
+
+test {
+    useJUnitPlatform()
+}
+
+allprojects {
+    //忽略警告
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile){
+            // Try to turn them all off automaticalLy
+            options.compilerArgs << '-Xlint:none'
+            options.compilerArgs << '-nowarn'// same as '-Xlint:none'
+
+            // Turn them off manually
+//			options.compilerArgs << '-Xlint:-auxiliaryclass'
+            options.compilerArgs << '-Xlint:-cast'
+            options.compilerArgs << '-Xlint:-classfile'
+            options.compilerArgs << '-Xlint:-deprecation'
+            options.compilerArgs << '-Xlint:-dep-ann'
+            options.compilerArgs << '-Xlint:-divzero'
+            options.compilerArgs << '-Xlint:-empty'
+            options.compilerArgs << '-Xlint:-fallthrough'
+            options.compilerArgs << '-Xlint:-finally'
+            options.compilerArgs << '-Xlint:-options'
+            options.compilerArgs << '-Xlint:-overloads'
+            options.compilerArgs << '-Xlint:-overrides'
+            options.compilerArgs << '-Xlint:-path'
+            options.compilerArgs << '-Xlint:-processing'
+            options.compilerArgs << '-Xlint:-rawtypes'
+            options.compilerArgs << '-Xlint:-serial'
+            options.compilerArgs << '-Xlint:-static'
+            options.compilerArgs << '-Xlint:-try'
+            options.compilerArgs << '-Xlint:-unchecked'
+            options.compilerArgs << '-Xlint:-varargs'
+        }
+    }
+}

@@ -1,0 +1,2 @@
+org.springframework.boot.SpringApplicationRunListener=org.yangushan.listener.MySpringApplicationRunListener
+org.springframework.context.ApplicationContextInitializer=org.yangushan.configuration.MyApplicationContextInitializer
